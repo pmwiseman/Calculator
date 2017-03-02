@@ -14,6 +14,11 @@ class ViewController: UIViewController {
     
     @IBOutlet weak var display: UILabel!
     var userIsInTheMiddleOfTyping = false
+    private var brain = CalculatorBrain()
+    
+    override func viewDidLoad() {
+        brain.accumulator = 0
+    }
     
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
@@ -22,11 +27,24 @@ class ViewController: UIViewController {
         self.display.layer.borderWidth = 1.0
     }
     
-    private var brain = CalculatorBrain()
+    private enum Constant {
+        case constant(Double)
+    }
+    
+    private var constants: Dictionary<String, Constant> = [
+        "π" : Constant.constant(Double.pi),
+        "e" : Constant.constant(M_E),
+        ]
     
     @IBAction func touchDigit(_ sender: UIButton) {
         //Always have swift infer types
         var digit = sender.currentTitle!
+        if let constant = constants[sender.currentTitle!] {
+            switch constant {
+            case .constant(let value):
+                digit = String(value)
+            }
+        }
         if brain.didChainOperation == true {
             brain.didChainOperation = false
         }
@@ -57,6 +75,12 @@ class ViewController: UIViewController {
             //when someone says this var = something
             display.text = String(newValue)
         }
+    }
+    
+    @IBAction func clearCalculator(_ sender: UIButton) {
+        displayValue = 0
+        userIsInTheMiddleOfTyping = false
+        brain.clearCalculator()
     }
     
     @IBAction func performOperation(_ sender: UIButton) {
