@@ -13,17 +13,36 @@ import UIKit
 class ViewController: UIViewController {
     
     @IBOutlet weak var display: UILabel!
-    
     var userIsInTheMiddleOfTyping = false
+    
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        //Display
+        self.display.layer.borderColor = UIColor.gray.cgColor
+        self.display.layer.borderWidth = 1.0
+    }
+    
+    private var brain = CalculatorBrain()
     
     @IBAction func touchDigit(_ sender: UIButton) {
         //Always have swift infer types
-        let digit = sender.currentTitle!
+        var digit = sender.currentTitle!
+        if brain.didChainOperation == true {
+            brain.didChainOperation = false
+        }
         if userIsInTheMiddleOfTyping {
             let textCurrentlyInDisplay = display.text!
-            display!.text = textCurrentlyInDisplay + digit
+            guard textCurrentlyInDisplay.contains(".") && digit == "." else {
+                display!.text = textCurrentlyInDisplay + digit
+                brain.setDescription(digit)
+                return
+            }
         } else {
+            if(digit == "."){
+                digit = "0" + digit
+            }
             display.text = digit
+            brain.setDescription(digit)
             userIsInTheMiddleOfTyping = true
         }
     }
@@ -39,8 +58,6 @@ class ViewController: UIViewController {
             display.text = String(newValue)
         }
     }
-    
-    private var brain = CalculatorBrain()
     
     @IBAction func performOperation(_ sender: UIButton) {
         if userIsInTheMiddleOfTyping {

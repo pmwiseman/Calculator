@@ -13,6 +13,8 @@ import Foundation
 struct CalculatorBrain {
     
     private var accumulator: Double?
+    var description: String?
+    var didChainOperation = false
     
     private enum Operation {
         case constant(Double)
@@ -20,19 +22,23 @@ struct CalculatorBrain {
         case unaryOperation((Double) -> Double)
         case binaryOperation((Double, Double) -> Double)
         case equals
+        case clear
     }
     
     private var operations: Dictionary<String, Operation> = [
-        "π" : Operation.constant(Double.pi),
+        "π" : Operation.constant(Double.pi), //These should function more like numbers than operations
         "e" : Operation.constant(M_E),
         "√" : Operation.unaryOperation(sqrt),
         "cos" : Operation.unaryOperation(cos),
+        "sin" : Operation.unaryOperation(sin),
+        "tan" : Operation.unaryOperation(tan),
         "±" : Operation.unaryOperation({ -$0 }),
         "×" : Operation.binaryOperation({ $0 * $1 }),
         "÷" : Operation.binaryOperation({ $0 / $1 }),
         "−" : Operation.binaryOperation({ $0 - $1 }),
         "+" : Operation.binaryOperation({ $0 + $1 }),
-        "=" : Operation.equals
+        "=" : Operation.equals,
+        "C" : Operation.clear
     ]
     
     mutating func performOperation(_ symbol: String) {
@@ -46,29 +52,48 @@ struct CalculatorBrain {
                     accumulator = function(accumulator!)
                 }
             case .binaryOperation(let function):
-                if accumulator != nil {
-                    pendingBinaryOperation = PendingBinaryOperation(function: function, firstOperand: accumulator!)
-                    accumulator = nil
+                if(isPartialResult){
+                    performPendingBinaryOperationWithChain(symbolFunction: function)
+                } else {
+                    if accumulator != nil {
+                        pendingBinaryOperation = PendingBinaryOperation(function: function, firstOperand: accumulator!)
+                        accumulator = nil
+                    } else {
+                        if pendingBinaryOperation != nil {
+                            pendingBinaryOperation?.function = function
+                        }
+                    }
                 }
             case .equals:
                 performPendingBinaryOperation()
+            case .clear:
+                break
             }
         }
     }
     
     private mutating func performPendingBinaryOperation() {
         //? if it is not set it will ignore this line
-        if pendingBinaryOperation != nil && accumulator != nil {
+        if pendingBinaryOperation != nil && accumulator != nil && didChainOperation == false {
            accumulator = pendingBinaryOperation!.perform(with: accumulator!)
             pendingBinaryOperation = nil
+        }
+    }
+    
+    private mutating func performPendingBinaryOperationWithChain(symbolFunction:@escaping (Double, Double) -> Double) {
+        performPendingBinaryOperation()
+        print(accumulator!)
+        if accumulator != nil {
+            pendingBinaryOperation = PendingBinaryOperation(function: symbolFunction, firstOperand: accumulator!)
+            didChainOperation = true
         }
     }
     
     private var pendingBinaryOperation: PendingBinaryOperation?
     
     private struct PendingBinaryOperation {
-        let function: (Double, Double) -> Double
-        let firstOperand: Double
+        var function: (Double, Double) -> Double
+        var firstOperand: Double
         
         func perform(with secondOperand: Double) -> Double {
             return function(firstOperand, secondOperand)
@@ -82,6 +107,24 @@ struct CalculatorBrain {
     var result: Double? {
         get {
             return accumulator
+        }
+    }
+    
+    var isPartialResult: Bool {
+        get {
+            if pendingBinaryOperation != nil && accumulator != nil {
+                return true
+            } else {
+                return false
+            }
+        }
+    }
+    
+    mutating func setDescription(_ value: String) {
+        if let unwrappedDescription = description {
+            description = unwrappedDescription + "\(value)"
+        } else {
+            description = value
         }
     }
 }
