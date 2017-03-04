@@ -135,14 +135,21 @@ struct CalculatorBrain {
     mutating func setDescription(_ value: String, replaceValueForUnaryOperation unaryReplaceString: String?) {
         if let unwrappedDescription = description {
             var workingDescription = unwrappedDescription
+            //Unary Operation was Used Replace the operand the unary operation was used on 
+            //and clear description if no operations are in the pipeline cos(x)
             if let _unaryReplaceString = unaryReplaceString {
                 let index = workingDescription.range(of: _unaryReplaceString, options: .backwards)?.lowerBound
-                if let _index = index {
-                    workingDescription = workingDescription.substring(to: _index)
+                if isLastCharacterWrapped(FromOriginalString: workingDescription) {
+                   workingDescription = ""
                 } else {
-                    clearDescription()
+                    if let _index = index {
+                        workingDescription = workingDescription.substring(to: _index)
+                    } else {
+                        clearDescription()
+                    }
                 }
             }
+            //If the user taps + and then taps - just switch them around dont let the operations stack up
             if isLastCharacterASymbol(FromOriginalString: unwrappedDescription) {
                 if isLastCharacterASymbol(FromOriginalString: value){
                     workingDescription = workingDescription.substring(to: workingDescription.index(before: workingDescription.endIndex))
@@ -171,6 +178,16 @@ struct CalculatorBrain {
             if symbol.key == String(describing: lastChar!)
                 && symbol.key != "π"
                 && symbol.key != "e"{
+                return true
+            }
+        }
+        return false
+    }
+    func isLastCharacterWrapped(FromOriginalString string: String) -> Bool {
+        let lastChar = string.characters.last
+        if let _lastChar = lastChar {
+            print(_lastChar)
+            if _lastChar == ")" {
                 return true
             }
         }
