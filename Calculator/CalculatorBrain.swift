@@ -17,7 +17,7 @@ struct CalculatorBrain {
     var didChainOperation = false
     
     private enum Operation {
-//        case constant(Double)
+        case constant(Double)
         //Make the associated value a function
         case unaryOperation((Double) -> Double)
         case binaryOperation((Double, Double) -> Double)
@@ -25,8 +25,8 @@ struct CalculatorBrain {
     }
     
     private var operations: Dictionary<String, Operation> = [
-//        "π" : Operation.constant(Double.pi), //These should function more like numbers than operations
-//        "e" : Operation.constant(M_E),
+        "π" : Operation.constant(Double.pi), //These should function more like numbers than operations
+        "e" : Operation.constant(M_E),
         "√" : Operation.unaryOperation(sqrt),
         "cos" : Operation.unaryOperation(cos),
         "sin" : Operation.unaryOperation(sin),
@@ -43,37 +43,44 @@ struct CalculatorBrain {
         if let operation = operations[symbol] {
             switch operation {
             //value is the associated value with the enum type
-//            case .constant(let value):
-//                accumulator = value
+            case .constant(let value):
+                accumulator = value
+                setDescription(symbol, replaceValueForUnaryOperation: nil)
+                if didChainOperation == true {
+                    didChainOperation = false
+                }
             case .unaryOperation(let function):
                 if accumulator != nil {
+                    let descriptionString = accumulator!.clean
+                    setDescription(symbol+"("+descriptionString+")", replaceValueForUnaryOperation: descriptionString)
                     accumulator = function(accumulator!)
                 }
             case .binaryOperation(let function):
                 if(isPartialResult){
-                    setDescription(symbol)
+                    setDescription(symbol, replaceValueForUnaryOperation: nil)
                     performPendingBinaryOperationWithChain(symbolFunction: function)
                 } else {
                     if accumulator != nil {
                         if description == nil {
                             if let _accumulator = accumulator {
-                                setDescription(String(_accumulator))
+                                setDescription(_accumulator.clean, replaceValueForUnaryOperation: nil)
                             }
                         }
-                        setDescription(symbol)
+                        setDescription(symbol, replaceValueForUnaryOperation: nil)
                         pendingBinaryOperation = PendingBinaryOperation(function: function, firstOperand: accumulator!)
                         accumulator = nil
                     } else {
                         if pendingBinaryOperation != nil {
-                            setDescription(symbol)
+                            setDescription(symbol, replaceValueForUnaryOperation: nil)
                             pendingBinaryOperation?.function = function
                         }
                     }
                 }
             case .equals:
-                setDescription(symbol)
+                setDescription(symbol, replaceValueForUnaryOperation: nil)
                 clearDescription()
                 performPendingBinaryOperation()
+                pendingBinaryOperation = nil
             }
         }
     }
@@ -125,9 +132,17 @@ struct CalculatorBrain {
         }
     }
     
-    mutating func setDescription(_ value: String) {
+    mutating func setDescription(_ value: String, replaceValueForUnaryOperation unaryReplaceString: String?) {
         if let unwrappedDescription = description {
             var workingDescription = unwrappedDescription
+            if let _unaryReplaceString = unaryReplaceString {
+                let index = workingDescription.range(of: _unaryReplaceString, options: .backwards)?.lowerBound
+                if let _index = index {
+                    workingDescription = workingDescription.substring(to: _index)
+                } else {
+                    clearDescription()
+                }
+            }
             if isLastCharacterASymbol(FromOriginalString: unwrappedDescription) {
                 if isLastCharacterASymbol(FromOriginalString: value){
                     workingDescription = workingDescription.substring(to: workingDescription.index(before: workingDescription.endIndex))
@@ -139,7 +154,10 @@ struct CalculatorBrain {
             description = value
         }
         if let _description = description {
-            print(_description)
+            let descriptionInfo = ["description": _description] as [String: String]
+            NotificationCenter.default.post(name: NSNotification.Name(rawValue: "calculationPerformed"),
+                                            object: nil,
+                                            userInfo: descriptionInfo)
         }
     }
     
@@ -150,7 +168,9 @@ struct CalculatorBrain {
     func isLastCharacterASymbol(FromOriginalString string: String) -> Bool {
         let lastChar = string.characters.last
         for symbol in operations {
-            if symbol.key == String(describing: lastChar!) {
+            if symbol.key == String(describing: lastChar!)
+                && symbol.key != "π"
+                && symbol.key != "e"{
                 return true
             }
         }
@@ -161,5 +181,6 @@ struct CalculatorBrain {
         accumulator = nil
         pendingBinaryOperation = nil
         didChainOperation = false
+        clearDescription()
     }
 }

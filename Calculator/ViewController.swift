@@ -10,14 +10,25 @@
 
 import UIKit
 
+extension Double {
+    var clean: String {
+        return self.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", self) : String(self)
+    }
+}
+
 class ViewController: UIViewController {
     
     @IBOutlet weak var display: UILabel!
+    @IBOutlet weak var calculationsPerformed: UILabel!
     var userIsInTheMiddleOfTyping = false
     private var brain = CalculatorBrain()
     
     override func viewDidLoad() {
         brain.accumulator = 0
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(changeDescriptionForPerformedCalculationPerformed(notification:)),
+                                               name: NSNotification.Name(rawValue: "calculationPerformed"),
+                                               object: nil)
     }
     
     override func viewWillLayoutSubviews() {
@@ -27,24 +38,9 @@ class ViewController: UIViewController {
         self.display.layer.borderWidth = 1.0
     }
     
-    private enum Constant {
-        case constant(Double)
-    }
-    
-    private var constants: Dictionary<String, Constant> = [
-        "π" : Constant.constant(Double.pi),
-        "e" : Constant.constant(M_E),
-        ]
-    
     @IBAction func touchDigit(_ sender: UIButton) {
         //Always have swift infer types
         var digit = sender.currentTitle!
-        if let constant = constants[sender.currentTitle!] {
-            switch constant {
-            case .constant(let value):
-                digit = String(value)
-            }
-        }
         if brain.didChainOperation == true {
             brain.didChainOperation = false
         }
@@ -52,7 +48,7 @@ class ViewController: UIViewController {
             let textCurrentlyInDisplay = display.text!
             guard textCurrentlyInDisplay.contains(".") && digit == "." else {
                 display!.text = textCurrentlyInDisplay + digit
-                brain.setDescription(digit)
+                brain.setDescription(digit, replaceValueForUnaryOperation: nil)
                 return
             }
         } else {
@@ -60,7 +56,7 @@ class ViewController: UIViewController {
                 digit = "0" + digit
             }
             display.text = digit
-            brain.setDescription(digit)
+            brain.setDescription(digit, replaceValueForUnaryOperation: nil)
             userIsInTheMiddleOfTyping = true
         }
     }
@@ -73,13 +69,20 @@ class ViewController: UIViewController {
         set {
             //newValue is the value on the right side of the equals
             //when someone says this var = something
-            display.text = String(newValue)
+            
+            display.text = newValue.clean
         }
+    }
+    
+    func changeDescriptionForPerformedCalculationPerformed(notification: Notification) {
+        guard let descriptionInfo = notification.userInfo else { return }
+        calculationsPerformed.text = descriptionInfo["description"] as! String?
     }
     
     @IBAction func clearCalculator(_ sender: UIButton) {
         displayValue = 0
         userIsInTheMiddleOfTyping = false
+        calculationsPerformed.text = "0"
         brain.clearCalculator()
     }
     
