@@ -41,14 +41,10 @@ class ViewController: UIViewController {
     @IBAction func touchDigit(_ sender: UIButton) {
         //Always have swift infer types
         var digit = sender.currentTitle!
-        if brain.didChainOperation == true {
-            brain.didChainOperation = false
-        }
         if userIsInTheMiddleOfTyping {
             let textCurrentlyInDisplay = display.text!
             guard textCurrentlyInDisplay.contains(".") && digit == "." else {
                 display!.text = textCurrentlyInDisplay + digit
-                brain.setDescription(digit, replaceValueForUnaryOperation: nil)
                 return
             }
         } else {
@@ -56,7 +52,6 @@ class ViewController: UIViewController {
                 digit = "0" + digit
             }
             display.text = digit
-            brain.setDescription(digit, replaceValueForUnaryOperation: nil)
             userIsInTheMiddleOfTyping = true
         }
     }
