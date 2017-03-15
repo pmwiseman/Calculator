@@ -8,6 +8,10 @@
 //Extra credit to only allow a certain number of digits 
 //in the display
 
+//To Do
+//Constants
+
+
 import UIKit
 
 extension Double {
@@ -40,6 +44,11 @@ class ViewController: UIViewController {
     
     @IBAction func touchDigit(_ sender: UIButton) {
         //Always have swift infer types
+        brain.deleteDataForFreshOperationSet()
+//        if !brain.isPartialResult {
+//            brain.description = nil
+//            brain.pendingDescription = nil
+//        }
         var digit = sender.currentTitle!
         if userIsInTheMiddleOfTyping {
             let textCurrentlyInDisplay = display.text!
@@ -53,6 +62,8 @@ class ViewController: UIViewController {
             }
             display.text = digit
             userIsInTheMiddleOfTyping = true
+            brain.accumulatorGeneratedNumber = false
+            brain.finishedTypingNumber = false
         }
     }
     
@@ -77,6 +88,7 @@ class ViewController: UIViewController {
     @IBAction func clearCalculator(_ sender: UIButton) {
         displayValue = 0
         userIsInTheMiddleOfTyping = false
+        brain.finishedTypingNumber = true
         calculationsPerformed.text = "0"
         brain.clearCalculator()
     }
@@ -85,6 +97,7 @@ class ViewController: UIViewController {
         if userIsInTheMiddleOfTyping {
             brain.setOperand(displayValue)
             userIsInTheMiddleOfTyping = false
+            brain.finishedTypingNumber = true
         }
         if let mathematicalSymbol = sender.currentTitle {
             brain.performOperation(mathematicalSymbol)
